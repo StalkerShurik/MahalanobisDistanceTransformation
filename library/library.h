@@ -1,13 +1,15 @@
 #ifndef MAHALANOBISDISTANCETRANSFORMATION_LIBRARY_H
 #define MAHALANOBISDISTANCETRANSFORMATION_LIBRARY_H
 
-#include "vector"
+#include <cstdint>
+#include <string>
+#include <vector>
 
 using Image2d = std::vector<std::vector<double>>;
 using Image3d = std::vector<std::vector<std::vector<double>>>;
 using TransformationMatrix = std::vector<std::vector<double>>;
 
-bool check_size_2d(Image2d &image);
+/*bool check_size_2d(Image2d &image);
 
 bool check_size_3d(Image3d &image);
 
@@ -78,7 +80,7 @@ void build_graph_3d(Image3d &image,
 
 void update_distances(std::vector<int32_t> &border,
                       std::vector<std::vector<std::pair<int32_t, double>>> &image_graph,
-                      std::vector<double> &distances);
+                      std::vector<double> &distances);*/
 
 Image2d make_transformation_2d(Image2d &image,
                                TransformationMatrix transformation = {{1.0, 0.0},

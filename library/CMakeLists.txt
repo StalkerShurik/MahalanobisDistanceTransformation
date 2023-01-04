@@ -4,3 +4,4 @@ project(MahalanobisDistanceTransformation)
 set(CMAKE_CXX_STANDARD 17)
 
 add_library(MahalanobisDistanceTransformation library.cpp)
+

@@ -1,15 +1,13 @@
-#include "string"
 #include "library.h"
 
-#include "cassert"
-#include "omp.h"
-#include "cmath"
-#include "queue"
-#include "set"
-#include "unordered_map"
+#include <cassert>
+#include <omp.h>
+#include <cmath>
+#include <queue>
+#include <set>
+#include <unordered_map>
 
 const int32_t inf = 1000000000; //1e9
-
 
 bool check_size_2d(Image2d &image) {
     if (image.empty()) {
