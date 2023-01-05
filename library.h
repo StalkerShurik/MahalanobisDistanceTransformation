@@ -1,6 +1,3 @@
-#ifndef MAHALANOBISDISTANCETRANSFORMATION_LIBRARY_H
-#define MAHALANOBISDISTANCETRANSFORMATION_LIBRARY_H
-
 #include <cstdint>
 #include <string>
 #include <vector>
@@ -103,6 +100,3 @@ Image2d make_transformation_2d_brute(Image2d &image,
                                      bool is_signed = false);
 
 Image2d make_transformation_2d_ellipse(Image2d &image, double lambda1, double lambda2, double theta, std::string &connectivity_type, bool is_signed);
-
-
-#endif //MAHALANOBISDISTANCETRANSFORMATION_LIBRARY_H
