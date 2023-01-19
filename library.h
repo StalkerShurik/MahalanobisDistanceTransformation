@@ -6,7 +6,7 @@ using Image2d = std::vector<std::vector<double>>;
 using Image3d = std::vector<std::vector<std::vector<double>>>;
 using TransformationMatrix = std::vector<std::vector<double>>;
 
-/*bool check_size_2d(Image2d &image);
+bool check_size_2d(Image2d &image);
 
 bool check_size_3d(Image3d &image);
 
@@ -77,7 +77,7 @@ void build_graph_3d(Image3d &image,
 
 void update_distances(std::vector<int32_t> &border,
                       std::vector<std::vector<std::pair<int32_t, double>>> &image_graph,
-                      std::vector<double> &distances);*/
+                      std::vector<double> &distances);
 
 Image2d make_transformation_2d(Image2d &image,
                                TransformationMatrix transformation = {{1.0, 0.0},
@@ -99,4 +99,10 @@ Image2d make_transformation_2d_brute(Image2d &image,
                                                                             {0.0, 1.0}},
                                      bool is_signed = false);
 
-Image2d make_transformation_2d_ellipse(Image2d &image, double lambda1, double lambda2, double theta, std::string &connectivity_type, bool is_signed);
+Image2d make_transformation_2d_ellipse(Image2d &image, double lambda1, double lambda2, double theta,
+                                       std::string &connectivity_type, bool is_signed);
+
+
+bool is_2d_connectivity_type_ok(std::string &connectivity_type);
+
+bool is_3d_connectivity_type_ok(std::string &connectivity_type);

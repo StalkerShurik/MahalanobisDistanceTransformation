@@ -1,82 +1,15 @@
 #include "library.h"
 
 #include <cassert>
-#include <omp.h>
 #include <cmath>
 #include <queue>
 #include <set>
-#include <unordered_map>
+#include <utility>
+#include <pybind11/pybind11.h>
+#include <pybind11/stl.h>
+#include <pybind11/numpy.h>
 
 const int32_t inf = 1000000000; //1e9
-
-bool check_size_2d(Image2d &image) {
-    if (image.empty()) {
-        return false;
-    }
-    if (image[0].empty()) {
-        return false;
-    }
-#pragma omp parallel for num_threads(4)
-    for (size_t i = 1; i < image.size(); ++i) {
-        if (image[i].size() != image[0].size()) {
-            return false;
-        }
-    }
-    return true;
-}
-
-bool check_size_3d(Image3d &image) {
-    if (image.empty()) {
-        return false;
-    }
-    if (image[0].empty()) {
-        return false;
-    }
-#pragma omp parallel for num_threads(4)
-    for (size_t i = 1; i < image.size(); ++i) {
-        if (image[i].size() != image[0].size()) {
-            return false;
-        }
-    }
-#pragma omp parallel for num_threads(4) collapse(2)
-    for (size_t i = 0; i < image.size(); ++i) {
-        for (size_t j = 0; j < image[i].size(); ++j) {
-            if (image[i][j].size() != image[0][0].size()) {
-                return false;
-            }
-        }
-    }
-    return true;
-}
-
-bool check_transformation_matrix_2d(TransformationMatrix &transformation) {
-    if (transformation.size() != 2) {
-        return false;
-    }
-    if (transformation[0].size() != 2 || transformation[1].size() != 2) {
-        return false;
-    }
-    return transformation[0][0] > 0 && transformation[0][0] * transformation[1][1] - transformation[1][0] * transformation[0][1] > 0;
-}
-
-/*bool check_transformation_matrix_3d(TransformationMatrix &transformation) {
-    if (transformation.size() != 3) {
-        return false;
-    }
-    if (transformation[0].size() != 3 || transformation[1].size() != 3 || transformation[2].size() != 3) {
-        return false;
-    }
-    Eigen::Matrix<double, 3, 3> transformation_matrix{{transformation[0][0], transformation[0][1], transformation[0][2]},
-                                                      {transformation[1][0], transformation[1][1], transformation[1][2]},
-                                                      {transformation[2][0], transformation[2][1], transformation[2][2]}};
-    Eigen::EigenSolver<Eigen::Matrix<double, 3, 3>> solver(transformation_matrix);
-    return solver.eigenvalues()[0].real() > 0 && solver.eigenvalues()[1].real() > 0 &&
-           solver.eigenvalues()[2].real() > 0;
-}*/
-
-bool check_transformation_matrix_3d(TransformationMatrix &transformation) {
-    return true;
-}
 
 int32_t get_vertex_id_2d(Image2d &image, int32_t x, int32_t y) {
     return x * static_cast<int32_t>(image[0].size()) + y;
@@ -276,6 +209,17 @@ is_border_3d(Image3d &image, std::vector<std::vector<std::pair<int32_t, double>>
     return false;
 }
 
+bool is_2d_connectivity_type_ok(std::string &connectivity_type) {
+    return connectivity_type == "4-connectivity" || connectivity_type == "8-connectivity" ||
+           connectivity_type == "diagonal-connectivity";
+}
+
+
+bool is_3d_connectivity_type_ok(std::string &connectivity_type) {
+    return connectivity_type == "6-connectivity" || connectivity_type == "26-connectivity" ||
+           connectivity_type == "diagonal-connectivity";
+}
+
 void build_graph_2d(Image2d &image,
                     std::vector<std::vector<std::pair<int32_t, double>>> &image_graph,
                     TransformationMatrix &transformation, std::string &connectivity_type) {
@@ -350,10 +294,10 @@ void update_distances(std::vector<int32_t> &border,
     }
 }
 
-Image2d make_transformation_2d(Image2d &image, TransformationMatrix transformation,
+Image2d make_transformation_2d_c(Image2d &image, TransformationMatrix transformation,
                                std::string connectivity_type, bool is_signed) {
-    assert(check_size_2d(image));
-    assert(check_transformation_matrix_2d(transformation));
+    //assert(check_size_2d(image));
+    //assert(check_transformation_matrix_2d(transformation));
     Image2d transformed_image(image.size());
 #pragma omp parallel for num_threads(4)
     for (int32_t i = 0; i < image.size(); ++i) {
@@ -410,8 +354,8 @@ Image2d make_transformation_2d(Image2d &image, TransformationMatrix transformati
 
 Image3d make_transformation_3d(Image3d &image, TransformationMatrix transformation,
                                std::string connectivity_type, bool is_signed) {
-    assert(check_size_3d(image));
-    assert(check_transformation_matrix_3d(transformation));
+    //assert(check_size_3d(image));
+    //assert(check_transformation_matrix_3d(transformation));
 
     Image3d transformed_image(image.size());
 #pragma omp parallel for num_threads(4) collapse(2)
@@ -495,8 +439,8 @@ bool is_border_2d_no_graph(Image2d &image, int32_t x, int32_t y, bool black) {
 
 Image2d make_transformation_2d_brute(Image2d &image, TransformationMatrix transformation,
                                      bool is_signed) {
-    assert(check_size_2d(image));
-    assert(check_transformation_matrix_2d(transformation));
+    //assert(check_size_2d(image));
+    //assert(check_transformation_matrix_2d(transformation));
 
     Image2d transformed_image(image.size());
 #pragma omp parallel for num_threads(4)
@@ -524,7 +468,8 @@ Image2d make_transformation_2d_brute(Image2d &image, TransformationMatrix transf
                 for (auto &k: border) {
                     int32_t x = k.first;
                     int32_t y = k.second;
-                    transformed_image[i][j] = std::min(transformed_image[i][j], calculate_distance_2d({i,j},{x,y}, transformation));
+                    transformed_image[i][j] = std::min(transformed_image[i][j],
+                                                       calculate_distance_2d({i, j}, {x, y}, transformation));
                 }
             }
         }
@@ -555,7 +500,9 @@ Image2d make_transformation_2d_brute(Image2d &image, TransformationMatrix transf
                     for (auto &k: border) {
                         int32_t x = k.first;
                         int32_t y = k.second;
-                        transformed_image_signed[i][j] = std::min(transformed_image_signed[i][j], calculate_distance_2d({i,j},{x,y}, transformation));
+                        transformed_image_signed[i][j] = std::min(transformed_image_signed[i][j],
+                                                                  calculate_distance_2d({i, j}, {x, y},
+                                                                                        transformation));
                     }
                 }
             }
@@ -569,10 +516,110 @@ Image2d make_transformation_2d_brute(Image2d &image, TransformationMatrix transf
     return transformed_image;
 }
 
-Image2d make_transformation_2d_ellipse(Image2d &image, double lambda1, double lambda2, double theta, std::string &connectivity_type, bool is_signed) {
+Image2d make_transformation_2d_ellipse(Image2d &image, double lambda1, double lambda2, double theta,
+                                       std::string &connectivity_type, bool is_signed) {
     std::vector<std::vector<double>> transformation(2, std::vector<double>(2));
     transformation[0][0] = lambda1 * lambda1 * cos(theta) * cos(theta) + lambda2 * lambda2 * sin(theta) * sin(theta);
     transformation[1][1] = lambda1 * lambda1 * sin(theta) * sin(theta) + lambda2 * lambda2 * cos(theta) * cos(theta);
     transformation[0][1] = transformation[1][0] = (lambda1 * lambda1 - lambda2 * lambda2) * sin(theta) * cos(theta);
-    return make_transformation_2d(image, transformation, connectivity_type, is_signed);
+    return make_transformation_2d_c(image, transformation, connectivity_type, is_signed);
+}
+
+
+////////////////ALL CHECKS ARE MOVED TO PYTHON FILE
+/*bool check_size_2d(Image2d &image) {
+    if (image.empty()) {
+        return false;
+    }
+    if (image[0].empty()) {
+        return false;
+    }
+#pragma omp parallel for num_threads(4)
+    for (size_t i = 1; i < image.size(); ++i) {
+        if (image[i].size() != image[0].size()) {
+            return false;
+        }
+    }
+    return true;
+}
+
+bool check_size_3d(Image3d &image) {
+    if (image.empty()) {
+        return false;
+    }
+    if (image[0].empty()) {
+        return false;
+    }
+#pragma omp parallel for num_threads(4)
+    for (size_t i = 1; i < image.size(); ++i) {
+        if (image[i].size() != image[0].size()) {
+            return false;
+        }
+    }
+#pragma omp parallel for num_threads(4) collapse(2)
+    for (size_t i = 0; i < image.size(); ++i) {
+        for (size_t j = 0; j < image[i].size(); ++j) {
+            if (image[i][j].size() != image[0][0].size()) {
+                return false;
+            }
+        }
+    }
+    return true;
+}
+
+bool check_transformation_matrix_2d(TransformationMatrix &transformation) {
+    if (transformation.size() != 2) {
+        return false;
+    }
+    if (transformation[0].size() != 2 || transformation[1].size() != 2) {
+        return false;
+    }
+    return transformation[0][0] > 0 &&
+           transformation[0][0] * transformation[1][1] - transformation[1][0] * transformation[0][1] > 0;
+}
+
+bool check_transformation_matrix_3d(TransformationMatrix &transformation) {
+    return true;
+}*/
+
+namespace py = pybind11;
+
+//void array_to_image(const std::vector<std::vector<double>>& v, const py::array<double> arr) {
+//    for (int i = 0; i < v.size(); ++i) {
+//        for (int j = 0; j < v[i].size(); ++j) {
+//            v[i][j] = *arr.data(i, j);
+//        }
+//    }
+//}
+
+py::array make_transformation(const py::array_t<double> image, const py::array_t<double> transformation,
+                               std::string connectivity_type, bool is_signed) {
+
+    Image2d v_image(image.shape()[0], std::vector<double>(image.shape()[1]));
+    std::vector<std::vector<double>> v_transformation(transformation.shape()[0], std::vector<double>(transformation.shape()[1]));
+
+    for (int i = 0; i < v_transformation.size(); ++i) {
+        for (int j = 0; j < v_transformation[i].size(); ++j) {
+            v_transformation[i][j] = *transformation.data(i, j);
+        }
+    }
+
+    for (int i = 0; i < v_image.size(); ++i) {
+        for (int j = 0; j < v_image[i].size(); ++j) {
+            v_image[i][j] = *image.data(i, j);
+        }
+    }
+
+    py::array ret = py::cast(make_transformation_2d_c(v_image, v_transformation, connectivity_type, is_signed));
+    return ret;
+}
+
+int do_nothing(int a) {
+    return 1;
+}
+
+PYBIND11_MODULE(mahalanobis_transformation, handle) {
+    handle.doc() = "Description";
+    handle.def("make_transformation", &make_transformation);
+    handle.def("do_nothing", &do_nothing);
 }
