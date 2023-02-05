@@ -379,6 +379,18 @@ void update_distances(std::vector<int32_t> &border,
     }
 }
 
+//Image2d make_window_transformation_2d(Image2d &image, TransformationMatrix &transformation, double border, bool is_signed) {
+//    std::string fake_connectivity = "8-connectivity";
+//    assert(check_input_2d(image, transformation, fake_connectivity));
+//    assert(border > 0);
+//    Image2d transformed_image(image.size());
+//#pragma omp parallel for num_threads(4)
+//    for (int32_t i = 0; i < image.size(); ++i) {
+//        transformed_image[i].assign(image[i].size(), inf);
+//    }
+//
+//}
+
 Image2d make_transformation_2d_c(Image2d &image, const TransformationMatrix& transformation,
                                  std::string connectivity_type, bool is_signed) {
     assert(check_input_2d(image, transformation, connectivity_type));
@@ -607,9 +619,6 @@ Image2d make_transformation_2d_ellipse(Image2d &image, double lambda1, double la
     transformation[0][1] = transformation[1][0] = (lambda1 * lambda1 - lambda2 * lambda2) * sin(theta) * cos(theta);
     return make_transformation_2d_c(image, transformation, connectivity_type, is_signed);
 }
-
-
-Image2d make_window_transformation_2d();
 
 //////////////////////////////////////////////////////////// PYBIND MOMENT
 
