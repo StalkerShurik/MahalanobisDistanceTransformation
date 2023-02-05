@@ -614,7 +614,7 @@ Image2d make_transformation_2d_ellipse(Image2d &image, double lambda1, double la
 
 namespace py = pybind11;
 
-void array2d_to_vector(const py::array_t<double> numpy_array, Image2d &vector) {
+void array2d_to_vector(const py::array_t<double> &numpy_array, Image2d &vector) {
 
     vector.resize(numpy_array.shape()[0]);
     for (size_t i = 0; i < vector.size(); ++i) {
@@ -627,7 +627,7 @@ void array2d_to_vector(const py::array_t<double> numpy_array, Image2d &vector) {
 
 
 py::array MDT_connectivity(const py::array_t<double> &image, const py::array_t<double> &transformation,
-                              std::string &connectivity_type, bool is_signed) {
+                              std::string &connectivity_type, bool is_signed = false) {
 
     Image2d v_image(image.shape()[0], std::vector<double>(image.shape()[1]));
     std::vector<std::vector<double>> v_transformation(transformation.shape()[0],
@@ -641,7 +641,7 @@ py::array MDT_connectivity(const py::array_t<double> &image, const py::array_t<d
 }
 
 py::array MDT_brute(const py::array_t<double>& image, const py::array_t<double>& transformation,
-                    bool is_signed) {
+                    bool is_signed = false) {
     Image2d v_image(image.shape()[0], std::vector<double>(image.shape()[1]));
     std::vector<std::vector<double>> v_transformation(transformation.shape()[0],
                                                       std::vector<double>(transformation.shape()[1]));
