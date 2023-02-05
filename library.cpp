@@ -330,7 +330,7 @@ void build_graph_3d(Image3d &image,
 #pragma omp parallel for num_threads(4)
     for (int32_t i = 0; i < image_graph.size(); ++i) {
         if (connectivity_type == "6-connectivity") {
-            //get_neighbours_6_connectivity_3d(image, image_graph[i], i, transformation);
+            get_neighbours_6_connectivity_3d(image, image_graph[i], i, transformation);
         } else if (connectivity_type == "26-connectivity") {
             get_neighbours_26_connectivity_3d(image, image_graph[i], i, transformation);
         } else {
@@ -379,7 +379,7 @@ void update_distances(std::vector<int32_t> &border,
     }
 }
 
-Image2d make_transformation_2d_c(Image2d &image, TransformationMatrix transformation,
+Image2d make_transformation_2d_c(Image2d &image, const TransformationMatrix& transformation,
                                  std::string connectivity_type, bool is_signed) {
     assert(check_input_2d(image, transformation, connectivity_type));
     Image2d transformed_image(image.size());
@@ -609,6 +609,8 @@ Image2d make_transformation_2d_ellipse(Image2d &image, double lambda1, double la
 }
 
 
+Image2d make_window_transformation_2d();
+
 //////////////////////////////////////////////////////////// PYBIND MOMENT
 
 
@@ -653,8 +655,19 @@ py::array MDT_brute(const py::array_t<double>& image, const py::array_t<double>&
     return ret;
 }
 
+py::array MDT_ellipse(const py::array_t<double>& image, double lambda1, double lambda2, double theta,
+                      std::string &connectivity_type, bool is_signed) {
+    Image2d v_image(image.shape()[0], std::vector<double>(image.shape()[1]));
+
+    array2d_to_vector(image, v_image);
+
+    py::array ret = py::cast(make_transformation_2d_ellipse(v_image, lambda1, lambda2, theta, connectivity_type, is_signed));
+    return ret;
+}
+
 PYBIND11_MODULE(mahalanobis_transformation, handle) {
     handle.doc() = "Description";
     handle.def("MDT_connectivity", &MDT_connectivity);
     handle.def("MDT_brute", &MDT_brute);
+    handle.def("MDT_ellipse", &MDT_ellipse);
 }
