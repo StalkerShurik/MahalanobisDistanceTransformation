@@ -94,11 +94,9 @@ void update_distances(std::vector<int32_t> &border,
 
 bool is_border_2d_no_graph(Image2d &image, int32_t x, int32_t y, bool black);
 
-//Image2d make_transformation_2d_brute(Image2d &image,
-//                                     TransformationMatrix transformation = {{1.0, 0.0},
-//                                                                            {0.0, 1.0}},
-//                                     bool is_signed = false);
-//
+Image2d make_transformation_2d_brute(Image2d &image, const TransformationMatrix& transformation,
+                                     bool is_signed);
+
 //Image2d make_transformation_2d_ellipse(Image2d &image, double lambda1, double lambda2, double theta,
 //                                       std::string &connectivity_type, bool is_signed);
 
