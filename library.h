@@ -106,3 +106,5 @@ bool is_border_2d_no_graph(Image2d &image, int32_t x, int32_t y, bool black);
 bool is_2d_connectivity_type_ok(std::string &connectivity_type);
 
 bool is_3d_connectivity_type_ok(std::string &connectivity_type);
+
+Image2d make_window_transformation_2d(Image2d &image, TransformationMatrix &transformation, double border_distance);

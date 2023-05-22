@@ -2,9 +2,10 @@
 
 #include <cassert>
 #include <cmath>
-#include <pybind11/pybind11.h>
-#include <pybind11/stl.h>
-#include <pybind11/numpy.h>
+#include <iostream>
+//#include <pybind11/pybind11.h>
+//#include <pybind11/stl.h>
+//#include <pybind11/numpy.h>
 #include <queue>
 #include <set>
 #include <utility>
@@ -379,17 +380,86 @@ void update_distances(std::vector<int32_t> &border,
     }
 }
 
-//Image2d make_window_transformation_2d(Image2d &image, TransformationMatrix &transformation, double border, bool is_signed) {
-//    std::string fake_connectivity = "8-connectivity";
-//    assert(check_input_2d(image, transformation, fake_connectivity));
-//    assert(border > 0);
-//    Image2d transformed_image(image.size());
-//#pragma omp parallel for num_threads(4)
-//    for (int32_t i = 0; i < image.size(); ++i) {
-//        transformed_image[i].assign(image[i].size(), inf);
-//    }
-//
-//}
+void go_dfs(int32_t start_vertex, int32_t cur, double border_distance,
+            std::vector<std::vector<std::pair<int32_t, double>>> &graph,
+            std::vector<int32_t> &used, std::vector<int32_t> &visited_vertexes,
+            std::vector<double> &distances, const Image2d &image, TransformationMatrix &transformation) {
+    std::cout << cur << std::endl;
+    visited_vertexes.push_back(cur);
+    used[cur] = 1;
+
+    for (int32_t i = 0; i < graph[cur].size(); ++i) {
+        int32_t vertex = graph[cur][i].first;
+        if (used[vertex]) {
+            continue;
+        }
+
+        int32_t vertex_x = get_x_in_image_2d(image, vertex);
+        int32_t vertex_y = get_y_in_image_2d(image, vertex);
+
+        double distance = calculate_distance_2d(std::make_pair(get_x_in_image_2d(image, start_vertex), get_y_in_image_2d(image, start_vertex)),
+                                                std::make_pair(vertex_x, vertex_y), transformation);
+
+        if (distance > border_distance) {
+            continue;
+        }
+
+        if (image[vertex_x][vertex_y] != 0) {
+            distances[start_vertex] = std::min(distance, distances[start_vertex]);
+            break;
+        }
+        go_dfs(start_vertex, vertex, border_distance, graph, used, visited_vertexes, distances, image, transformation);
+    }
+}
+
+Image2d make_window_transformation_2d(Image2d &image, TransformationMatrix &transformation, double border_distance) {
+    std::string connectivity_type = "8-connectivity";
+    assert(check_input_2d(image, transformation, connectivity_type));
+    assert(border_distance > 0);
+
+    Image2d transformed_image(image.size());
+#pragma omp parallel for num_threads(4)
+    for (int32_t i = 0; i < image.size(); ++i) {
+        transformed_image[i].assign(image[i].size(), border_distance);
+    }
+    std::vector<std::vector<std::pair<int32_t, double>>> image_graph;
+    image_graph.resize(image[0].size() * image.size());
+    build_graph_2d(image, image_graph, transformation, connectivity_type);
+    std::vector<double> distances(image_graph.size(), border_distance);
+
+#pragma omp parallel for num_threads(4)
+    for (int32_t i = 0; i < image_graph.size(); ++i) {
+        int32_t current_x = get_x_in_image_2d(image, i);
+        int32_t current_y = get_y_in_image_2d(image, i);
+        if (image[current_x][current_y] != 0) {
+            transformed_image[current_x][current_y] = 0;
+            distances[i] = 0;
+        }
+    }
+
+    std::vector<int32_t> used(distances.size(), 0);
+    std::vector<int32_t> visited_vertexes;
+
+    for (int32_t i = 0; i < distances.size(); ++i) {
+        int32_t current_x = get_x_in_image_2d(image, i);
+        int32_t current_y = get_y_in_image_2d(image, i);
+        visited_vertexes.clear();
+        if (image[current_x][current_y] == 0) {
+            go_dfs(i, i, border_distance, image_graph, used, visited_vertexes, distances, image, transformation);
+        }
+        for (int32_t visited_vertex : visited_vertexes) {
+            used[visited_vertex] = 0;
+        }
+    }
+
+    for (int32_t i = 0; i < distances.size(); ++i) {
+        int32_t current_x = get_x_in_image_2d(image, i);
+        int32_t current_y = get_y_in_image_2d(image, i);
+        transformed_image[current_x][current_y] = distances[i];
+    }
+
+    return transformed_image;
+}
 
 Image2d make_transformation_2d_c(Image2d &image, const TransformationMatrix& transformation,
                                  std::string connectivity_type, bool is_signed) {
@@ -533,7 +603,7 @@ bool is_border_2d_no_graph(Image2d &image, int32_t x, int32_t y, bool black) {
     return false;
 }
 
-Image2d make_transformation_2d_brute(Image2d &image, TransformationMatrix transformation,
+Image2d make_transformation_2d_brute(Image2d &image, const TransformationMatrix& transformation,
                                      bool is_signed) {
     assert(check_input_2d(image, transformation));
 
@@ -623,60 +693,76 @@ Image2d make_transformation_2d_ellipse(Image2d &image, double lambda1, double la
 //////////////////////////////////////////////////////////// PYBIND MOMENT
 
 
-namespace py = pybind11;
-
-void array2d_to_vector(const py::array_t<double> &numpy_array, Image2d &vector) {
-
-    vector.resize(numpy_array.shape()[0]);
-    for (size_t i = 0; i < vector.size(); ++i) {
-        vector[i].resize(numpy_array.shape()[1]);
-        for (size_t j = 0; j < vector[i].size(); ++j) {
-            vector[i][j] = *numpy_array.data(i, j);
-        }
-    }
-}
-
-
-py::array MDT_connectivity(const py::array_t<double> &image, const py::array_t<double> &transformation,
-                              std::string &connectivity_type, bool is_signed = false) {
-
-    Image2d v_image(image.shape()[0], std::vector<double>(image.shape()[1]));
-    std::vector<std::vector<double>> v_transformation(transformation.shape()[0],
-                                                      std::vector<double>(transformation.shape()[1]));
-
-    array2d_to_vector(image, v_image);
-    array2d_to_vector(transformation, v_transformation);
-
-    py::array ret = py::cast(make_transformation_2d_c(v_image, v_transformation, connectivity_type, is_signed));
-    return ret;
-}
-
-py::array MDT_brute(const py::array_t<double>& image, const py::array_t<double>& transformation,
-                    bool is_signed = false) {
-    Image2d v_image(image.shape()[0], std::vector<double>(image.shape()[1]));
-    std::vector<std::vector<double>> v_transformation(transformation.shape()[0],
-                                                      std::vector<double>(transformation.shape()[1]));
-
-    array2d_to_vector(image, v_image);
-    array2d_to_vector(transformation, v_transformation);
-
-    py::array ret = py::cast(make_transformation_2d_brute(v_image, v_transformation, is_signed));
-    return ret;
-}
-
-py::array MDT_ellipse(const py::array_t<double>& image, double lambda1, double lambda2, double theta,
-                      std::string &connectivity_type, bool is_signed) {
-    Image2d v_image(image.shape()[0], std::vector<double>(image.shape()[1]));
-
-    array2d_to_vector(image, v_image);
-
-    py::array ret = py::cast(make_transformation_2d_ellipse(v_image, lambda1, lambda2, theta, connectivity_type, is_signed));
-    return ret;
-}
-
-PYBIND11_MODULE(mahalanobis_transformation, handle) {
-    handle.doc() = "Description";
-    handle.def("MDT_connectivity", &MDT_connectivity);
-    handle.def("MDT_brute", &MDT_brute);
-    handle.def("MDT_ellipse", &MDT_ellipse);
-}
+//namespace py = pybind11;
+//
+//void array2d_to_vector(const py::array_t<double> &numpy_array, Image2d &vector) {
+//
+//    vector.resize(numpy_array.shape()[0]);
+//    for (size_t i = 0; i < vector.size(); ++i) {
+//        vector[i].resize(numpy_array.shape()[1]);
+//        for (size_t j = 0; j < vector[i].size(); ++j) {
+//            vector[i][j] = *numpy_array.data(i, j);
+//        }
+//    }
+//}
+//
+//
+//py::array MDT_connectivity(const py::array_t<double> &image, const py::array_t<double> &transformation,
+//                              std::string &connectivity_type, bool is_signed = false) {
+//
+//    Image2d v_image(image.shape()[0], std::vector<double>(image.shape()[1]));
+//    std::vector<std::vector<double>> v_transformation(transformation.shape()[0],
+//                                                      std::vector<double>(transformation.shape()[1]));
+//
+//    array2d_to_vector(image, v_image);
+//    array2d_to_vector(transformation, v_transformation);
+//
+//    py::array ret = py::cast(make_transformation_2d_c(v_image, v_transformation, connectivity_type, is_signed));
+//    return ret;
+//}
+//
+//py::array MDT_brute(const py::array_t<double>& image, const py::array_t<double>& transformation,
+//                    bool is_signed = false) {
+//    Image2d v_image(image.shape()[0], std::vector<double>(image.shape()[1]));
+//    std::vector<std::vector<double>> v_transformation(transformation.shape()[0],
+//                                                      std::vector<double>(transformation.shape()[1]));
+//
+//    array2d_to_vector(image, v_image);
+//    array2d_to_vector(transformation, v_transformation);
+//
+//    py::array ret = py::cast(make_transformation_2d_brute(v_image, v_transformation, is_signed));
+//    return ret;
+//}
+//
+//py::array MDT_ellipse(const py::array_t<double>& image, double lambda1, double lambda2, double theta,
+//                      std::string &connectivity_type, bool is_signed) {
+//    Image2d v_image(image.shape()[0], std::vector<double>(image.shape()[1]));
+//
+//    array2d_to_vector(image, v_image);
+//
+//    py::array ret = py::cast(make_transformation_2d_ellipse(v_image, lambda1, lambda2, theta, connectivity_type, is_signed));
+//    return ret;
+//}
+//
+//py::array MDT_window(const py::array_t<double>& image, const py::array_t<double>& transformation,
+//                    double distance) {
+//    Image2d v_image(image.shape()[0], std::vector<double>(image.shape()[1]));
+//    std::vector<std::vector<double>> v_transformation(transformation.shape()[0],
+//                                                      std::vector<double>(transformation.shape()[1]));
+//
+//    array2d_to_vector(image, v_image);
+//    array2d_to_vector(transformation, v_transformation);
+//
+//    py::array ret = py::cast(make_window_transformation_2d(v_image, v_transformation, distance));
+//    return ret;
+//}
+//
+//
+//
+//PYBIND11_MODULE(mahalanobis_transformation, handle) {
+//    handle.doc() = "Description";
+//    handle.def("MDT_connectivity", &MDT_connectivity);
+//    handle.def("MDT_brute", &MDT_brute);
+//    handle.def("MDT_ellipse", &MDT_ellipse);
+//    handle.def("MDT_window", &MDT_window);
+//}
