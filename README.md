@@ -6,8 +6,9 @@ transforms like this. For instance, separation of overlapping objects, robot nav
 Using various improvement algorithms it is possible to compute MDT faster than brute force algorithm.  <br />
 
 Compiling guide: <br />
-~cd build <br />
-~cmake ../ <br />
-~make <br />
+git clone https://github.com/pybind/pybind11 to the root <br /> 
+cd build <br />
+cmake ../ <br />
+make <br />
 
 now you have mahalanobis_transformation.cpython.so file that can be included into Python code
