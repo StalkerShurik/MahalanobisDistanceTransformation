@@ -12,7 +12,6 @@ mahalanobis_transformation.MDT_brute(image, transform_matrux, is_signed)<br />
 mahalanobis_transformation.MDT_window(image, transform_matrix, distance)<br />
   -distance is a real number that defines the neighbouhood size (pixels located further than distance from current will be ignored)<br />
 mahalabonis_transformation.MDT_ellipse(image, lambda1, lambda2, theta, connectivity_type, is_signed)<br />
-  -lambda1, lambda2, theta are ellipse params <br />
-![image](https://github.com/StalkerShurik/MahalanobisDistanceTransformation/assets/67455670/7f8e33b1-dc4e-4775-ba1b-ee35d0fdcd3c)<br />
+  -lambda1, lambda2, theta are ellipse params (semi-axes and angel) <br />
   
 all functions return numpy arrays (tranformed images) <br />
