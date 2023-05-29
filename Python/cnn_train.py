@@ -12,8 +12,8 @@ import torch.nn.functional as F
 
 
 
-train = generate_samples(70)
-validation = generate_samples(20)
+train = generate_samples(100)
+validation = generate_samples(50)
 test = generate_samples(500)
 
 training_set = CustomImageDataset(train)
@@ -37,7 +37,7 @@ timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
 writer = SummaryWriter('runs/fashion_trainer_{}'.format(timestamp))
 epoch_number = 0
 
-EPOCHS = 1
+EPOCHS = 10
 
 best_vloss = 1_000_000.
 
