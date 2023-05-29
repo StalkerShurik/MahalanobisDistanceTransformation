@@ -25,13 +25,13 @@ lambda1, lambda2, theta = 2, 5, 0
 
 transformed1 = mahalanobis_transformation.MDT_connectivity(img1, trans1, "8-connectivity", 0)
 transformed2 = mahalanobis_transformation.MDT_brute(img2, trans2, 1)
-transformed3 = mahalanobis_transformation.MDT_window(img2, trans3, 10)
+transformed3 = mahalanobis_transformation.MDT_window(img2, trans3, 25)
 transformed4 = mahalanobis_transformation.MDT_ellipse(img1, lambda1, lambda2, theta, "4-connectivity", 0)
 
 #brute algo: params same without connectivity
 im1 = Image.fromarray(transformed1)
 im2 = Image.fromarray(10 * transformed2)
-im3 = Image.fromarray(10 * transformed3)
+im3 = Image.fromarray(5 * transformed3)
 im4 = Image.fromarray(transformed4)
 
 
