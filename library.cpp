@@ -11,7 +11,9 @@
 #include <utility>
 
 
-const int32_t inf = 1000000000; //1e9
+const int32_t inf = 10000;
+
+//FUNCTIONS TO SWITCH BETWEEN IMAGE AND GRAPH ID'S
 
 int32_t get_vertex_id_2d(const Image2d &image, int32_t x, int32_t y) {
     return x * static_cast<int32_t>(image[0].size()) + y;
@@ -44,6 +46,8 @@ int32_t get_z_in_image_3d(const Image3d &image, int32_t vertex_id) {
            static_cast<int32_t>(image[0][0].size());
 }
 
+//FUNCTIONS TO CALCULATE DISTANCE BETWEEN PIXELS
+
 double calculate_distance_2d(std::pair<int32_t, int32_t> v1, std::pair<int32_t, int32_t> v2,
                              const TransformationMatrix &transformation) {
     v1.first -= v2.first;
@@ -63,6 +67,8 @@ double calculate_distance_3d(std::vector<double> &v1, std::vector<double> &v2,
     return sqrt(v1[0] * v2[0] + v1[1] * v2[1] + v1[2] * v2[2]);
 }
 
+//FUNCTIONS TO CHECK IF THE COORDINATES ARE VALID
+
 bool is_not_out_of_borders_2d(const Image2d &image, int32_t x, int32_t y) {
     return x >= 0 && y >= 0 && x < image.size() && y < image[0].size();
 }
@@ -70,6 +76,8 @@ bool is_not_out_of_borders_2d(const Image2d &image, int32_t x, int32_t y) {
 bool is_not_out_of_borders_3d(const Image3d &image, int32_t x, int32_t y, int32_t z) {
     return x >= 0 && y >= 0 && z >= 0 && x < image.size() && y < image[0].size() && z < image[0][0].size();
 }
+
+//FUNCTIONS THAT ADD NEIGHBOURS OF THE CURRENT PIXEL TO THE GRAPH
 
 void
 get_neighbours_4_connectivity_2d(const Image2d &image, std::vector<std::pair<int32_t, double>> &neighbours,
@@ -187,6 +195,8 @@ get_neighbours_26_connectivity_3d(const Image3d &image, std::vector<std::pair<in
     get_neighbours_diagonal_connectivity_3d(image, neighbours, vertex, transformation);
 }
 
+//FUNCTIONS CHECK IF THE PIXEL IS A BORDER PIXEL OF THE SET OF INTEREST
+
 bool
 is_border_2d(const Image2d &image, const std::vector<std::vector<std::pair<int32_t, double>>> &image_graph,
              int32_t vertex,
@@ -217,6 +227,8 @@ is_border_3d(const Image3d &image, const std::vector<std::vector<std::pair<int32
     }
     return false;
 }
+
+//CHECK INPUT DATA
 
 bool is_2d_connectivity_type_ok(std::string &connectivity_type) {
     return connectivity_type == "4-connectivity" || connectivity_type == "8-connectivity";
@@ -310,6 +322,8 @@ bool check_input_3d(const Image3d &image, const TransformationMatrix &transforma
     return check_size_3d(image) && check_transformation_matrix_3d(transformation);
 }
 
+//FUNCTIONS THAT BUILD GRAPH BY THE IMAGE
+
 void build_graph_2d(const Image2d &image,
                     std::vector<std::vector<std::pair<int32_t, double>>> &image_graph,
                     const TransformationMatrix &transformation, const std::string &connectivity_type) {
@@ -340,6 +354,8 @@ void build_graph_3d(Image3d &image,
     }
 }
 
+//DIJKSTRA ITERATOR
+
 void update_distances(std::vector<int32_t> &border,
                       std::vector<std::vector<std::pair<int32_t, double>>> &image_graph,
                       std::vector<double> &distances) {
@@ -359,8 +375,6 @@ void update_distances(std::vector<int32_t> &border,
         buckets[left_bucket].erase(buckets[left_bucket].begin());
 #pragma omp parallel for num_threads(4)
         for (auto go_to: image_graph[current_vertex]) {
-            //int32_t current_x = get_x_in_image(transformed_image, go_to.first);
-            //int32_t current_y = get_y_in_image(transformed_image, go_to.first);
             if (distances[go_to.first] > current_distance + go_to.second) {
                 int32_t new_bucket_id = std::floor(1.0 * (current_distance + go_to.second) / bucket_size);
                 int32_t previous_bucket_id;
@@ -379,6 +393,8 @@ void update_distances(std::vector<int32_t> &border,
         }
     }
 }
+
+//DFS FOR WINDOW ALGORITHM
 
 void go_dfs(int32_t start_vertex, int32_t cur, double border_distance,
             std::vector<std::vector<std::pair<int32_t, double>>> &graph,
@@ -410,6 +426,8 @@ void go_dfs(int32_t start_vertex, int32_t cur, double border_distance,
         go_dfs(start_vertex, vertex, border_distance, graph, used, visited_vertexes, distances, image, transformation);
     }
 }
+
+//WINDOW TRANSFORMATION
 
 Image2d make_window_transformation_2d(Image2d &image, TransformationMatrix &transformation, double border_distance) {
     std::string connectivity_type = "8-connectivity";
@@ -459,6 +477,8 @@ Image2d make_window_transformation_2d(Image2d &image, TransformationMatrix &tran
 
     return transformed_image;
 }
+
+//DIJKSTRA
 
 Image2d make_transformation_2d_c(Image2d &image, const TransformationMatrix& transformation,
                                  std::string connectivity_type, bool is_signed) {
@@ -516,6 +536,8 @@ Image2d make_transformation_2d_c(Image2d &image, const TransformationMatrix& tra
     }
     return transformed_image;
 }
+
+//3D ALGO
 
 Image3d make_transformation_3d(Image3d &image, TransformationMatrix transformation,
                                std::string connectivity_type, bool is_signed) {
@@ -583,6 +605,8 @@ Image3d make_transformation_3d(Image3d &image, TransformationMatrix transformati
     return transformed_image;
 }
 
+//CHECK IF THE ELEMENT IS A BORDER ELEMENT IN IMAGE MODE
+
 bool is_border_2d_no_graph(Image2d &image, int32_t x, int32_t y, bool black) {
 
 #pragma omp parallel for num_threads(4) collapse(2)
@@ -601,6 +625,8 @@ bool is_border_2d_no_graph(Image2d &image, int32_t x, int32_t y, bool black) {
     }
     return false;
 }
+
+//BRUTE
 
 Image2d make_transformation_2d_brute(Image2d &image, const TransformationMatrix& transformation,
                                      bool is_signed) {
@@ -679,6 +705,7 @@ Image2d make_transformation_2d_brute(Image2d &image, const TransformationMatrix&
     }
     return transformed_image;
 }
+//ELLIPSE ALGO
 
 Image2d make_transformation_2d_ellipse(Image2d &image, double lambda1, double lambda2, double theta,
                                        std::string &connectivity_type, bool is_signed) {
@@ -755,8 +782,6 @@ py::array MDT_window(const py::array_t<double>& image, const py::array_t<double>
     py::array ret = py::cast(make_window_transformation_2d(v_image, v_transformation, distance));
     return ret;
 }
-
-
 
 PYBIND11_MODULE(mahalanobis_transformation, handle) {
     handle.doc() = "Description";

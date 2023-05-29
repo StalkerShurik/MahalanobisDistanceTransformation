@@ -79,26 +79,26 @@ void update_distances(std::vector<int32_t> &border,
                       std::vector<std::vector<std::pair<int32_t, double>>> &image_graph,
                       std::vector<double> &distances);
 
-//Image2d make_transformation_2d(Image2d &image,
-//                               TransformationMatrix transformation = {{1.0, 0.0},
-//                                                                      {0.0, 1.0}},
-//                               std::string connectivity_type = "8-connectivity",
-//                               bool is_signed = false);
-//
-//Image3d make_transformation_3d(Image3d &image,
-//                               TransformationMatrix transformation = {{1.0, 0.0, 0.0},
-//                                                                      {0.0, 1.0, 0.0},
-//                                                                      {0.0, 0.0, 1.0}},
-//                               std::string connectivity_type = "6-connectivity",
-//                               bool is_signed = false);
+Image2d make_transformation_2d(Image2d &image,
+                               TransformationMatrix transformation = {{1.0, 0.0},
+                                                                      {0.0, 1.0}},
+                               std::string connectivity_type = "8-connectivity",
+                               bool is_signed = false);
+
+Image3d make_transformation_3d(Image3d &image,
+                               TransformationMatrix transformation = {{1.0, 0.0, 0.0},
+                                                                      {0.0, 1.0, 0.0},
+                                                                      {0.0, 0.0, 1.0}},
+                               std::string connectivity_type = "6-connectivity",
+                               bool is_signed = false);
 
 bool is_border_2d_no_graph(Image2d &image, int32_t x, int32_t y, bool black);
 
 Image2d make_transformation_2d_brute(Image2d &image, const TransformationMatrix& transformation,
                                      bool is_signed);
 
-//Image2d make_transformation_2d_ellipse(Image2d &image, double lambda1, double lambda2, double theta,
-//                                       std::string &connectivity_type, bool is_signed);
+Image2d make_transformation_2d_ellipse(Image2d &image, double lambda1, double lambda2, double theta,
+                                       std::string &connectivity_type, bool is_signed);
 
 
 bool is_2d_connectivity_type_ok(std::string &connectivity_type);
