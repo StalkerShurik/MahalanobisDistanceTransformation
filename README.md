@@ -11,4 +11,5 @@ cd build <br />
 cmake ../ <br />
 make <br />
 
-now you have mahalanobis_transformation.cpython.so file that can be included into Python code
+Now you have mahalanobis_transformation.cpython.so file that can be included into Python code <br \>
+Python folder contains usage examaples of the library
