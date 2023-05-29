@@ -7,9 +7,6 @@ import mahalanobis_transformation
 
 img1 = cv.imread("DOG.jpg") #reading images
 img2 = cv.imread("brain (1).jpg")
-#img2 = cv.imread("brain (1).jpg")
-#img2 = cv.imread("brain (1).jpg")
-
 
 ret1, img1 = cv.threshold(img1, 127, 255, 0) # pixels > 127 becomes 255 to make transparent background white, in more common case you can
                                           # map grey-scale-images to black-white
