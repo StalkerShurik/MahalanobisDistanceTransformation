@@ -1,0 +1,6 @@
+blob_generator - file contains blobs generation function and custom dataset class to use it with pytorch
+time visualization - file contains visualization of work time of different algorithms
+speed_test - file contains speed test of different algorithms. Change image size in blob_generator
+simple_usage_test - file contains examples of MDT usage (see to understand how to use function)
+cnn_prepare - contains cnn architecture
+mahalanobis_transformation.cpython-310-x86_64-linux-gnu.so - library file (may not work, you should read instruction )
